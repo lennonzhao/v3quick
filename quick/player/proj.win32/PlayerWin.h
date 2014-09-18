@@ -35,6 +35,7 @@ public:
     virtual void openNewPlayer();
     virtual void openNewPlayerWithProjectConfig(const ProjectConfig &config);
     virtual void openProjectWithProjectConfig(const ProjectConfig &config);
+    virtual void trackEvent(const char *eventName);
 
 protected:
     PlayerWin();
@@ -63,6 +64,7 @@ protected:
     // 
     void loadLuaConfig();
     void registerKeyboardEvent();
+    void setZoom(float frameScale);
 
     // debug log
     void writeDebugLog(const char *log);

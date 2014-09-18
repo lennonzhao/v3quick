@@ -29,6 +29,11 @@
 #include "CCLuaEngine.h"
 #include "PlayerLuaCore.h"
 
+// for network
+#include "cocos2dx_extra.h"
+#include "network/CCHTTPRequest.h"
+#include "native/CCNative.h"
+
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                        HINSTANCE hPrevInstance,
                        LPTSTR    lpCmdLine,
@@ -111,7 +116,12 @@ void PlayerWin::quit()
 
 void PlayerWin::relaunch()
 {
-    openNewPlayer();
+    int x = 0;
+    int y = 0;
+    glfwGetWindowPos(Director::getInstance()->getOpenGLView()->getWindow(), &x, &y);
+    _project.setWindowOffset(Vec2(x, y));
+    openNewPlayerWithProjectConfig(_project);
+
     quit();
 }
 
@@ -126,9 +136,9 @@ void PlayerWin::openNewPlayerWithProjectConfig(const ProjectConfig &config)
     stringstream buf;
     buf << taskid++;
 
-    string commandLine = "\"";
+    string commandLine;
     commandLine.append(getApplicationExePath());
-    commandLine.append("\" ");
+    commandLine.append(" ");
     commandLine.append(config.makeCommandLine());
     CCLOG("PlayerWin::openNewPlayerWithProjectConfig(): %s", commandLine.c_str());
 
@@ -140,9 +150,11 @@ void PlayerWin::openNewPlayerWithProjectConfig(const ProjectConfig &config)
     STARTUPINFO si = {0};
     si.cb = sizeof(STARTUPINFO);
 
-    WCHAR command[MAX_PATH];
+#define MAX_COMMAND 1024 // lenth of commandLine is always beyond MAX_PATH
+
+    WCHAR command[MAX_COMMAND];
     memset(command, 0, sizeof(command));
-    MultiByteToWideChar(CP_UTF8, 0, commandLine.c_str(), -1, command, MAX_PATH);
+    MultiByteToWideChar(CP_UTF8, 0, commandLine.c_str(), -1, command, MAX_COMMAND);
 
     BOOL success = CreateProcess(NULL,
                                  command,   // command line 
@@ -165,6 +177,25 @@ void PlayerWin::openProjectWithProjectConfig(const ProjectConfig &config)
 {
     openNewPlayerWithProjectConfig(config);
     quit();
+}
+
+void PlayerWin::trackEvent(const char *eventName)
+{
+    cocos2d::extra::HTTPRequest *request = cocos2d::extra::HTTPRequest::createWithUrl(NULL,
+                    "http://www.google-analytics.com/collect",
+                    kCCHTTPRequestMethodPOST);
+    request->addPOSTValue("v", "1");
+    request->addPOSTValue("tid", "UA-52790340-1");
+    request->addPOSTValue("cid", getUserGUID().c_str());
+    request->addPOSTValue("t", "event");
+
+    request->addPOSTValue("an", "player");
+    request->addPOSTValue("av", cocos2dVersion());
+
+    request->addPOSTValue("ec", "win");
+    request->addPOSTValue("ea", eventName);
+
+    request->start();
 }
 
 void PlayerWin::loadLuaConfig()
@@ -197,15 +228,9 @@ void PlayerWin::loadLuaConfig()
     lua_pushstring(pEngine->getLuaStack()->getLuaState(), _project.makeCommandLine().c_str());
     lua_setglobal(pEngine->getLuaStack()->getLuaState(), "__PLAYER_OPEN_COMMAND__");
 
-
-    // set guid
-    string uid = getUserGUID();
-    lua_pushstring(pEngine->getLuaStack()->getLuaState(), uid.c_str());
-    lua_setglobal(pEngine->getLuaStack()->getLuaState(), "__G_QUICK_GUID__");
-
     // load player.lua
-    quickRootPath.append("quick/player/src/player.lua");
-    pEngine->getLuaStack()->executeScriptFile(quickRootPath.c_str());
+    string playerCoreFilePath = quickRootPath + "quick/welcome/src/player.lua";
+    pEngine->getLuaStack()->executeScriptFile(playerCoreFilePath.c_str());
 }
 
 void PlayerWin::registerKeyboardEvent()
@@ -301,18 +326,18 @@ int PlayerWin::run()
     // enable DPI-Aware with DeclareDPIAware.manifest
     // http://msdn.microsoft.com/en-us/library/windows/desktop/dn469266%28v=vs.85%29.aspx#declaring_dpi_awareness
     float screenScale = 1.0f;
-    if (dpi >= 120 && dpi < 144)
-    {
-        screenScale = 1.25f;
-    }
-    else if (dpi >= 144 && dpi < 192)
-    {
-        screenScale = 1.5f;
-    }
-    else if (dpi >= 192)
-    {
-        screenScale = 2.0f;
-    }
+    //if (dpi >= 120 && dpi < 144)
+    //{
+    //    screenScale = 1.25f;
+    //}
+    //else if (dpi >= 144 && dpi < 192)
+    //{
+    //    screenScale = 1.5f;
+    //}
+    //else if (dpi >= 192)
+    //{
+    //    screenScale = 2.0f;
+    //}
     CCLOG("SCREEN DPI = %d, SCREEN SCALE = %0.2f", dpi, screenScale);
 
     // create opengl view
@@ -339,6 +364,17 @@ int PlayerWin::run()
     auto director = Director::getInstance();
     director->setOpenGLView(glview);
     director->setScreenScale(screenScale);
+
+    // set window position
+    if (_project.getProjectDir().length())
+    {
+        setZoom(_project.getFrameScale());
+        Vec2 pos = _project.getWindowOffset();
+        if (pos.x != 0 && pos.y != 0)
+        {
+            glfwSetWindowPos(glview->getWindow(), pos.x, pos.y);
+        }
+    }
 
     // init player services
     initServices();
@@ -421,7 +457,13 @@ void PlayerWin::onWindowResize(EventCustom* event)
 void PlayerWin::onWindowScale(EventCustom* event)
 {
     float scale = atof(event->getDataString().c_str());
-    cocos2d::Director::getInstance()->getOpenGLView()->setFrameZoomFactor(scale);
+    setZoom(scale);
+}
+
+void PlayerWin::setZoom(float frameScale)
+{
+    _project.setFrameScale(frameScale);
+    cocos2d::Director::getInstance()->getOpenGLView()->setFrameZoomFactor(frameScale);
 }
 
 // debug log

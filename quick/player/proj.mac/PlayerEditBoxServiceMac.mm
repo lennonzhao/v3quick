@@ -2,6 +2,7 @@
 #include "PlayerEditBoxServiceMac.h"
 
 #include "cocos2d.h"
+#include "CCLuaEngine.h"
 #include "glfw3native.h"
 
 // internal
@@ -21,7 +22,8 @@
 
 - (void)dealloc
 {
-    [textField_ resignFirstResponder];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    
     [textField_ removeFromSuperview];
     [textField_ release];
     
@@ -53,9 +55,26 @@
                                       nil];
         
         [[[self getNSWindow] contentView] addSubview:textField_];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                selector:@selector(onTextDidChanged:)
+                                                    name:NSControlTextDidEndEditingNotification
+                                                  object:nil];
     }
     
     return self;
+}
+
+- (void)onTextDidChanged:(NSNotification *) notification
+{
+    // hide first
+    [self.textField setHidden:YES];
+    
+    player::PlayerEditBoxServiceMac *macEditBox = static_cast<player::PlayerEditBoxServiceMac *>(self.editBox);
+    auto luaStack = cocos2d::LuaEngine::getInstance()->getLuaStack();
+    
+    luaStack->pushString([self.textField.stringValue UTF8String]);
+    luaStack->executeFunctionByHandler(macEditBox->getHandler(), 1);
 }
 
 - (void)setupTextField:(NSTextField *)textField
@@ -66,7 +85,6 @@
     [textField setHidden:NO];
     [textField setWantsLayer:YES];
     [textField setDelegate:self];
-//    [textField becomeFirstResponder];
 }
 
 -(void) doAnimationWhenKeyboardMoveWithDuration:(float)duration distance:(float)distance
@@ -102,7 +120,6 @@
 {
     if ([textField_ superview]) {
         [textField_ resignFirstResponder];
-//        [textField_ removeFromSuperview];
     }
 }
 
@@ -138,60 +155,6 @@
     return NO;
 }
 
-- (BOOL)control:(NSControl *)control textShouldBeginEditing:(NSText *)fieldEditor
-{
-    return YES;
-}
-
-- (BOOL)control:(NSControl *)control textShouldEndEditing:(NSText *)fieldEditor
-{
-    cocos2d::EventCustom event("APP.EVENT");
-    std::string data = "{\"name\":\"editorComplete\", \"string\":\"";
-    data.append([self.textField.stringValue UTF8String]);
-    data.append("\"}");
-    event.setDataString(data);
-    
-    cocos2d::Director::getInstance()->getEventDispatcher()->dispatchEvent(&event);
-    
-    return YES;
-}
-
-
-- (BOOL)textFieldShouldBeginEditing:(NSTextField *)sender        // return NO to disallow editing.
-{
-    editState_ = YES;
-    return YES;
-}
-
-- (BOOL)textFieldShouldEndEditing:(NSTextField *)sender
-{
-    editState_ = NO;
-    return YES;
-}
-
-- (BOOL)control:(NSControl *)control didFailToFormatString:(NSString *)string errorDescription:(NSString *)error
-{
-    return YES;
-}
-/**
- * Delegate method called before the text has been changed.
- * @param textField The text field containing the text.
- * @param range The range of characters to be replaced.
- * @param string The replacement string.
- * @return YES if the specified text range should be replaced; otherwise, NO to keep the old text.
- */
-- (BOOL)textField:(NSTextField *) textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
-{
-    return YES;
-}
-
-/**
- * Called each time when the text field's text has changed.
- */
-- (void)controlTextDidChange:(NSNotification *)notification
-{
-}
-
 @end
 
 
@@ -204,6 +167,7 @@ PLAYER_NS_BEGIN;
 
 PlayerEditBoxServiceMac::PlayerEditBoxServiceMac()
 {
+    _handler = 0;
     NSRect rect =  NSMakeRect(0, 0, 100, 20);
     _sysEdit = [[EditBoxServiceImplMac alloc] initWithFrame:rect editBox:this];
 }

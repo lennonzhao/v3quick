@@ -2128,7 +2128,7 @@
 				4949C33619AD9F6B00113896 /* UITextField.h */,
 			);
 			name = CCTextField;
-			path = "../../../../../Documents/Work/cocos2d-x/extensions/GUI/CCTextField";
+			path = "../../extensions/GUI/CCTextField";
 			sourceTree = "<group>";
 		};
 		49BCFA461982699900F48FF6 /* filters */ = {

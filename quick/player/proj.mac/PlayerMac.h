@@ -33,7 +33,8 @@ public:
     void openNewPlayer();
     void openNewPlayerWithProjectConfig(const ProjectConfig& config);
     void openProjectWithProjectConfig(const ProjectConfig& config);
-
+    void trackEvent(const char* eventName);
+    
     void setController(id controller);
 protected:
     PlayerMac();

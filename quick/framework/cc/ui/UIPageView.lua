@@ -38,6 +38,28 @@ local UIPageView = class("UIPageView", function()
 	return node
 end)
 
+--[[--
+
+UIPageView构建函数
+
+可用参数有：
+
+-   column 每一页的列数，默认为1
+-   row 每一页的行数，默认为1
+-   columnSpace 列之间的间隙，默认为0
+-   rowSpace 行之间的间隙，默认为0
+-   viewRect 页面控件的显示区域
+-   padding 值为一个表，页面控件四周的间隙
+    -   left 左边间隙
+    -   right 右边间隙
+    -   top 上边间隙
+    -   bottom 下边间隙
+-   bCirc 页面是否循环,默认为false
+
+
+@param table params 参数表
+
+]]
 function UIPageView:ctor(params)
 	self.items_ = {}
 	self.viewRect_ = params.viewRect or cc.rect(0, 0, display.width, display.height)
@@ -58,6 +80,13 @@ function UIPageView:ctor(params)
     	end)
 end
 
+--[[--
+
+创建一个新的页面控件项
+
+@return UIPageViewItem
+
+]]
 function UIPageView:newItem()
 	local item = UIPageViewItem.new()
 	item:setContentSize(self.viewRect_.width/self.column_, self.viewRect_.height/self.row_)
@@ -65,18 +94,43 @@ function UIPageView:newItem()
 	return item
 end
 
+--[[--
+
+添加一项到页面控件中
+
+@param node item 页面控件项
+
+@return UIPageView
+
+]]
 function UIPageView:addItem(item)
 	table.insert(self.items_, item)
 
 	return self
 end
 
+--[[--
+
+注册一个监听函数
+
+@param function listener 监听函数
+
+@return UIPageView
+
+]]
 function UIPageView:onTouch(listener)
 	self.touchListener = listener
 
 	return self
 end
 
+--[[--
+
+加载数据，各种参数
+
+@return UIPageView
+
+]]
 function UIPageView:reload()
 	local page
 	self.pages_ = {}
@@ -98,17 +152,28 @@ function UIPageView:reload()
 	return self
 end
 
-function UIPageView:gotoPage(pageIdx, bSmooth)
+--[[--
+
+跳转到特定的页面
+
+@param integer pageIdx 要跳转的页面的位置
+@param boolean bSmooth 是否需要跳转动画
+@param bLeftToRight 移动的方向,在可循环下有效, nil:自动调整方向,false:从右向左,true:从左向右
+
+@return UIPageView
+
+]]
+function UIPageView:gotoPage(pageIdx, bSmooth, bLeftToRight)
 	if pageIdx < 1 or pageIdx > self:getPageCount() then
-		return
+		return self
 	end
-	if pageIdx == self.curPageIdx_ then
-		return
+	if pageIdx == self.curPageIdx_ and bSmooth then
+		return self
 	end
 
 	if bSmooth then
-		self:resetPagePos(pageIdx - self.curPageIdx_)
-		self:scrollPagePos(pageIdx - self.curPageIdx_)
+		self:resetPagePos(pageIdx, bLeftToRight)
+		self:scrollPagePos(pageIdx, bLeftToRight)
 	else
 		self.pages_[self.curPageIdx_]:setVisible(false)
 		self.pages_[pageIdx]:setVisible(true)
@@ -116,24 +181,51 @@ function UIPageView:gotoPage(pageIdx, bSmooth)
 			self.viewRect_.x, self.viewRect_.y)
 		self.curPageIdx_ = pageIdx
 
-		self.touchListener{pageView = self, name = "clicked",
-				item = self.items_[clickIdx],
-				itemIdx = clickIdx,
-				pageIdx = self.curPageIdx_}
+		-- self.notifyListener_{name = "clicked",
+		-- 		item = self.items_[clickIdx],
+		-- 		itemIdx = clickIdx,
+		-- 		pageIdx = self.curPageIdx_}
 		self:notifyListener_{name = "pageChange"}
 	end
+
+	return self
 end
 
+--[[--
+
+得到页面的总数
+
+@return number
+
+]]
 function UIPageView:getPageCount()
 	return math.ceil(table.nums(self.items_)/(self.column_*self.row_))
 end
 
+--[[--
+
+得到当前页面的位置
+
+@return number
+
+]]
 function UIPageView:getCurPageIdx()
 	return self.curPageIdx_
 end
 
+--[[--
+
+设置页面控件是否为循环
+
+@param boolean bCirc 是否循环
+
+@return UIPageView
+
+]]
 function UIPageView:setCirculatory(bCirc)
 	self.bCirc = bCirc
+
+	return self
 end
 
 -- private
@@ -183,7 +275,7 @@ function UIPageView:onTouch_(event)
 	end
 
 	if "began" == event.name then
-		self:resetLRPage()
+		self:stopAllTransition()
 		self.bDrag_ = false
 	elseif "moved" == event.name then
 		self.bDrag_ = true
@@ -193,6 +285,7 @@ function UIPageView:onTouch_(event)
 		if self.bDrag_ then
 			self:scrollAuto()
 		else
+			self:resetPages_()
 			self:onClick_(event)
 		end
 	end
@@ -200,19 +293,58 @@ function UIPageView:onTouch_(event)
 	return true
 end
 
-function UIPageView:resetLRPage()
-	local pageIdx = self.curPageIdx_
-	local page
+--[[--
 
-	self:stopAllTransition()
-	self:resetPagePos(-1)
-	self:resetPagePos(1)
+重置页面,检查当前页面在不在初始位置
+用于在动画被stopAllTransition的情况
+
+]]
+function UIPageView:resetPages_()
+	local x,y = self.pages_[self.curPageIdx_]:getPosition()
+
+	if x == self.viewRect_.x then
+		return
+	end
+	print("UIPageView - resetPages_")
+	-- self.pages_[self.curPageIdx_]:getPosition(self.viewRect_.x, y)
+	self:disablePage()
+	self:gotoPage(self.curPageIdx_)
 end
 
-function UIPageView:resetPagePos(dis)
+--[[--
+
+重置相关页面的位置
+
+@param integer pos 要移动到的位置
+@param bLeftToRight 移动的方向,在可循环下有效, nil:自动调整方向,false:从右向左,true:从左向右
+
+]]
+function UIPageView:resetPagePos(pos, bLeftToRight)
 	local pageIdx = self.curPageIdx_
 	local page
 	local pageWidth = self.viewRect_.width
+	local dis
+	local count = #self.pages_
+
+	dis = pos - pageIdx
+	if self.bCirc then
+		local disL,disR
+		if dis > 0 then
+			disR = dis
+			disL = disR - count
+		else
+			disL = dis
+			disR = disL + count
+		end
+
+		if nil == bLeftToRight then
+			dis = ((math.abs(disL) > math.abs(disR)) and disR) or disL
+		elseif bLeftToRight then
+			dis = disR
+		else
+			dis = disL
+		end
+	end
 
 	local disABS = math.abs(dis)
 	local x = self.pages_[pageIdx]:getPosition()
@@ -222,8 +354,13 @@ function UIPageView:resetPagePos(dis)
 			pageIdx = pageIdx + 1
 			x = x + pageWidth
 		else
+			pageIdx = pageIdx + count
 			pageIdx = pageIdx - 1
 			x = x - pageWidth
+		end
+		pageIdx = pageIdx % count
+		if 0 == pageIdx then
+			pageIdx = count
 		end
 		page = self.pages_[pageIdx]
 		if page then
@@ -233,20 +370,55 @@ function UIPageView:resetPagePos(dis)
 	end
 end
 
-function UIPageView:scrollPagePos(dis)
+--[[--
+
+移动到相对于当前页的某个位置
+
+@param integer pos 要移动到的位置
+@param bLeftToRight 移动的方向,在可循环下有效, nil:自动调整方向,false:从右向左,true:从左向右
+
+]]
+function UIPageView:scrollPagePos(pos, bLeftToRight)
 	local pageIdx = self.curPageIdx_
 	local page
 	local pageWidth = self.viewRect_.width
+	local dis
+	local count = #self.pages_
+
+	dis = pos - pageIdx
+	if self.bCirc then
+		local disL,disR
+		if dis > 0 then
+			disR = dis
+			disL = disR - count
+		else
+			disL = dis
+			disR = disL + count
+		end
+
+		if nil == bLeftToRight then
+			dis = ((math.abs(disL) > math.abs(disR)) and disR) or disL
+		elseif bLeftToRight then
+			dis = disR
+		else
+			dis = disL
+		end
+	end
 
 	local disABS = math.abs(dis)
 	local x = self.viewRect_.x
 	local movedis = dis*pageWidth
 
-	for i=1,disABS do
+	for i=1, disABS do
 		if dis > 0 then
 			pageIdx = pageIdx + 1
 		else
+			pageIdx = pageIdx + count
 			pageIdx = pageIdx - 1
+		end
+		pageIdx = pageIdx % count
+		if 0 == pageIdx then
+			pageIdx = count
 		end
 		page = self.pages_[pageIdx]
 		if page then
@@ -258,7 +430,11 @@ function UIPageView:scrollPagePos(dis)
 	transition.moveBy(self.pages_[self.curPageIdx_],
 					{x = -movedis, y = 0, time = 0.3,
 					onComplete = function()
-						self.curPageIdx_ = self.curPageIdx_ + dis
+						local pageIdx = (self.curPageIdx_ + dis + count)%count
+						if 0 == pageIdx then
+							pageIdx = count
+						end
+						self.curPageIdx_ = pageIdx
 						self:disablePage()
 						self:notifyListener_{name = "pageChange"}
 					end})
@@ -297,7 +473,8 @@ function UIPageView:scroll(dis)
 		table.insert(threePages, false)
 		table.insert(threePages, self.pages_[self.curPageIdx_])
 	elseif 2 == count then
-		if dis > 0 then
+		local posX, posY = self.pages_[self.curPageIdx_]:getPosition()
+		if posX > self.viewRect_.x then
 			page = self:getNextPage(false)
 			if not page then
 				page = false

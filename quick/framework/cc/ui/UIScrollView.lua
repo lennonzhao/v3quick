@@ -1,4 +1,34 @@
 
+--[[
+
+Copyright (c) 2011-2014 chukong-inc.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+]]
+
+--[[--
+
+quick 滚动控件
+
+]]
+
 local UIScrollView = class("UIScrollView", function()
 	return cc.ClippingRegionNode:create()
 end)
@@ -9,6 +39,27 @@ UIScrollView.DIRECTION_BOTH			= 0
 UIScrollView.DIRECTION_VERTICAL		= 1
 UIScrollView.DIRECTION_HORIZONTAL	= 2
 
+--[[--
+
+滚动控件的构建函数
+
+可用参数有：
+
+-   direction 滚动控件的滚动方向，默认为垂直与水平方向都可滚动
+-   viewRect 列表控件的显示区域
+-   scrollbarImgH 水平方向的滚动条
+-   scrollbarImgV 垂直方向的滚动条
+-   bgColor 背景色,nil表示无背景色
+-   bgStartColor 渐变背景开始色,nil表示无背景色
+-   bgEndColor 渐变背景结束色,nil表示无背景色
+-   bg 背景图
+-   bgScale9 背景图是否可缩放
+-	capInsets 缩放区域
+
+
+@param table params 参数表
+
+]]
 function UIScrollView:ctor(params)
 	self.bBounce = true
 	self.nShakeVal = 5
@@ -23,7 +74,7 @@ function UIScrollView:ctor(params)
 	if params.viewRect then
 		self:setViewRect(params.viewRect)
 	end
-	if not params.direction then
+	if params.direction then
 		self:setDirection(params.direction)
 	end
 	if params.scrollbarImgH then
@@ -96,10 +147,29 @@ function UIScrollView:setViewRect(rect)
 	return self
 end
 
+--[[--
+
+得到滚动控件的显示区域
+
+@return Rect
+
+]]
 function UIScrollView:getViewRect()
 	return self.viewRect_
 end
 
+--[[--
+
+设置布局四周的空白
+
+@param number top 上边的空白
+@param number right 右边的空白
+@param number bottom 下边的空白
+@param number left 左边的空白
+
+@return UIScrollView
+
+]]
 function UIScrollView:setLayoutPadding(top, right, bottom, left)
 	if not self.layoutPadding then
 		self.layoutPadding = {}
@@ -108,29 +178,60 @@ function UIScrollView:setLayoutPadding(top, right, bottom, left)
 	self.layoutPadding.right = right
 	self.layoutPadding.bottom = bottom
 	self.layoutPadding.left = left
+
+	return self
 end
 
 function UIScrollView:setActualRect(rect)
 	self.actualRect_ = rect
 end
 
+--[[--
+
+设置滚动方向
+
+@param number dir 滚动方向
+
+@return UIScrollView
+
+]]
 function UIScrollView:setDirection(dir)
 	self.direction = dir
 
 	return self
 end
 
+--[[--
+
+获取滚动方向
+
+@return number
+
+]]
 function UIScrollView:getDirection()
 	return self.direction
 end
 
+--[[--
+
+设置滚动控件是否开启回弹功能
+
+@param boolean bBounceable 是否开启回弹
+
+@return UIScrollView
+
+]]
 function UIScrollView:setBounceable(bBounceable)
 	self.bBounce = bBounceable
 
 	return self
 end
 
--- 重置位置,主要用在纵向滚动时,
+--[[--
+
+重置位置,主要用在纵向滚动时
+
+]]
 function UIScrollView:resetPosition()
 	if UIScrollView.DIRECTION_VERTICAL ~= self.direction then
 		return
@@ -143,6 +244,15 @@ function UIScrollView:resetPosition()
 	self.scrollNode:setPosition(x, y)
 end
 
+--[[--
+
+判断一个node是否在滚动控件的显示区域中
+
+@param node item scrollView中的项
+
+@return boolean
+
+]]
 function UIScrollView:isItemInViewRect(item)
 	if "userdata" ~= type(item) then
 		item = nil
@@ -168,6 +278,15 @@ function UIScrollView:isItemInViewRect(item)
 	return cc.rectIntersectsRect(self:getViewRectInWorldSpace(), bound)
 end
 
+--[[--
+
+将要显示的node加到scrollview中,scrollView只支持滚动一个node
+
+@param node node 要显示的项
+
+@return UIScrollView
+
+]]
 function UIScrollView:addScrollNode(node)
 	self:addChild(node)
 	self.scrollNode = node
@@ -188,10 +307,26 @@ function UIScrollView:addScrollNode(node)
     return self
 end
 
+--[[--
+
+返回scrollView中的滚动node
+
+@return node 滚动node
+
+]]
 function UIScrollView:getScrollNode()
 	return self.scrollNode
 end
 
+--[[--
+
+注册滚动控件的监听函数
+
+@param function listener 监听函数
+
+@return UIScrollView
+
+]]
 function UIScrollView:onScroll(listener)
 	self.scrollListener_ = listener
 
@@ -602,6 +737,154 @@ function UIScrollView:scaleToParent_()
 	end
 
 	return scale
+end
+
+--[[--
+
+scrollView的填充方法，可以自动把一个table里的node有序的填充到scrollview里。
+
+~~~ lua
+
+--填充100个相同大小的图片。
+    local view =  cc.ui.UIScrollView.new({viewRect=CCRect(0,0,display.width,display.height),direction=2});
+    self:addChild(view);
+    local t = {};
+    for i = 1, 100 do
+      local png  = cc.ui.UIImage.new("box_bai.png");
+      t[#t+1] = png;
+      cc.ui.UILabel.new({text = i, size = 24, color = ccc3(100,100,100)})
+      :align(display.CENTER, png:getContentSize().width/, png:getContentSize().height/2):addTo(png);
+    end
+--填充scrollview，参数itemSize为填充项的大小(填充项大小必须相同)
+    view:fill(t,{itemSize=cc.size(SIZE(t[#t]))});
+
+~~~
+
+注意：nodes 是table结构，且一定要是{node1,node2,node3,...}不能是{a=node1,b=node2,c=node3,...}
+
+@param nodes node集
+@param params 参见fill函数头定义。
+
+]]
+
+function UIScrollView:fill(nodes,params)
+  --多参数的继承用法,把param2的参数增加覆盖到param1中。
+  local extend = function(param1,param2)
+    if not param2 then
+      return param1;
+    end
+    for k , v in pairs(param2) do
+      param1[k] = param2[k];
+    end
+    return param1;
+  end
+
+  local params = extend({
+    --自动间距
+    autoGap = true,
+    --宽间距
+    widthGap = 0,
+    --高间距
+    heightGap = 0,
+    --自动行列
+    autoTable = true,
+    --行数目
+    rowCount = 3,
+    --列数目
+    cellCount = 3,
+    --填充项大小
+    itemSize = CCSize(50,50)
+  },params);
+
+  if #nodes == 0 then
+    return nil;
+  end
+
+  --基本坐标工具方法
+  local SIZE = function(node) return node:getContentSize(); end
+  local W = function(node) return node:getContentSize().width; end
+  local H = function(node) return node:getContentSize().height; end
+  local S_SIZE = function(node,w,h) return node:setContentSize(CCSize(w,h)); end
+  local S_XY = function(node,x,y) node:setPosition(x,y); end
+  local AX = function(node) return node:getAnchorPoint().x; end
+  local AY = function(node) return node:getAnchorPoint().y; end
+  --三元运算符
+  local CALC_3 = function(exp, result1, result2) if(exp==true)then return result1; else return result2; end end
+
+  --创建一个容器node
+  local innerContainer = display.newNode();
+  --初始容器大小为视图大小
+  S_SIZE(innerContainer,self:getViewRect().width,self:getViewRect().height);
+  self:addScrollNode(innerContainer);
+  --  innerContainer:addTo(self:getScrollNode());
+  
+  --如果是纵向布局
+  if self.direction == cc.ui.UIScrollView.DIRECTION_VERTICAL then
+
+    --自动布局
+    if params.autoTable then
+      params.cellCount = math.floor(W(self)/params.itemSize.width);
+    end
+
+    --自动间隔
+    if params.autoGap then
+      params.widthGap = (W(self)-(params.cellCount*params.itemSize.width))/(params.cellCount+1);
+      params.heightGap = params.widthGap;
+    end
+
+    --填充量
+    params.rowCount = CALC_3(#nodes%params.cellCount==0,math.floor(#nodes/params.cellCount),math.floor(#nodes/params.cellCount)+1);
+    S_SIZE(innerContainer,W(self),(params.itemSize.height+params.heightGap)*params.rowCount+params.heightGap);
+
+    for i = 1 ,#(nodes) do
+
+      local n = nodes[i];
+      local x = 0.0;
+      local y = 0.0;
+
+      x = params.widthGap + math.floor((i-1) % params.cellCount) * (params.widthGap+params.itemSize.width);
+      y = H(innerContainer)-(math.floor((i-1)/params.cellCount)+1)*(params.heightGap+params.itemSize.height);
+      x = x + W(n) * AX(n);
+      y = y + H(n) * AY(n);
+
+      S_XY(n,x,y);
+      n:addTo(innerContainer);
+
+    end
+    --如果是横向布局
+    --  elseif(self.direction==cc.ui.UIScrollView.DIRECTION_HORIZONTAL) then
+  else
+    if(params.autoTable)then
+      params.rowCount = math.floor(H(self)/params.itemSize.height);
+    end
+
+    if(params.autoGap)then
+      params.heightGap = (H(self)-(params.rowCount*params.itemSize.height))/(params.rowCount+1);
+      params.widthGap = params.heightGap;
+    end
+
+    params.cellCount = CALC_3(#nodes%params.rowCount==0,math.floor(#nodes/params.rowCount),math.floor(#nodes/params.rowCount)+1);
+    S_SIZE(innerContainer,(params.itemSize.width+params.widthGap)*params.cellCount+params.widthGap,H(self));
+
+    for i = 1, #(nodes) do
+
+      local n = nodes[i];
+      local x = 0.0;
+      local y = 0.0;
+
+      --不管描点如何，总是有标准居中方式设置坐标。
+      x = params.widthGap +  math.floor((i-1) / params.rowCount) * (params.widthGap+params.itemSize.width);
+      y = H(innerContainer)-(math.floor((i-1) % params.rowCount) +1)*(params.heightGap+params.itemSize.height);
+      x = x + W(n) * AX(n);
+      y = y + H(n) * AY(n);
+
+      S_XY(n,x,y);
+      n:addTo(innerContainer);
+
+    end
+
+  end
+
 end
 
 return UIScrollView

@@ -24,6 +24,7 @@ function TestUIListViewScene:createListView5()
     self.lv = cc.ui.UIListView.new {
         -- bgColor = cc.c4b(200, 200, 200, 120),
         bg = "sunset.png",
+        bgScale9 = true,
         viewRect = cc.rect(40, 80, 120, 400),
         direction = cc.ui.UIScrollView.DIRECTION_VERTICAL,
         scrollbarImgV = "bar.png"}

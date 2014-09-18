@@ -1,11 +1,11 @@
 /*
 ** Lua binding: PlayerLuaCore
-** Generated automatically by tolua++-1.0.92 on Wed Sep  3 16:36:04 2014.
+** Generated automatically by tolua++-1.0.92 on Thu Sep  4 17:44:15 2014.
 */
 
 #include "PlayerLuaCore.h"
 #include "CCLuaEngine.h"
-#include "LuaBasicConversions.h"
+
 using namespace cocos2d;
 
 
@@ -16,6 +16,7 @@ using namespace cocos2d;
 #include "PlayerProtocol.h"
 #include "tolua++.h"
 #include "tolua_fix.h"
+#include "LuaBasicConversions.h"
 using namespace std;
 using namespace player;
 
@@ -69,6 +70,7 @@ static void tolua_reg_types (lua_State* tolua_S)
  tolua_usertype(tolua_S,"cocos2d::Size");
  tolua_usertype(tolua_S,"cocos2d::Vec2");
  tolua_usertype(tolua_S,"cocos2d::Ref");
+ 
  tolua_usertype(tolua_S,"PlayerTask");
  tolua_usertype(tolua_S,"std::vector<std::string>");
  tolua_usertype(tolua_S,"cocos2d::Color3B");
@@ -2412,6 +2414,39 @@ static int tolua_PlayerLuaCore_PlayerProtocol_openProjectWithProjectConfig00(lua
 }
 #endif //#ifndef TOLUA_DISABLE
 
+/* method: trackEvent of class  PlayerProtocol */
+#ifndef TOLUA_DISABLE_tolua_PlayerLuaCore_PlayerProtocol_trackEvent00
+static int tolua_PlayerLuaCore_PlayerProtocol_trackEvent00(lua_State* tolua_S)
+{
+#if COCOS2D_DEBUG >= 1
+ tolua_Error tolua_err;
+ if (
+     !tolua_isusertype(tolua_S,1,"PlayerProtocol",0,&tolua_err) ||
+     !tolua_isstring(tolua_S,2,0,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,3,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  PlayerProtocol* self = (PlayerProtocol*)  tolua_tousertype(tolua_S,1,0);
+  const char* eventName = ((const char*)  tolua_tostring(tolua_S,2,0));
+#if COCOS2D_DEBUG >= 1
+  if (!self) tolua_error(tolua_S,"invalid 'self' in function 'trackEvent'", NULL);
+#endif
+  {
+   self->trackEvent(eventName);
+  }
+ }
+ return 0;
+#if COCOS2D_DEBUG >= 1
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'trackEvent'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
 /* method: openFile of class  PlayerFileDialogServiceProtocol */
 #ifndef TOLUA_DISABLE_tolua_PlayerLuaCore_PlayerFileDialogServiceProtocol_openFile00
 static int tolua_PlayerLuaCore_PlayerFileDialogServiceProtocol_openFile00(lua_State* tolua_S)
@@ -3889,6 +3924,39 @@ static int tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_setFontColor00(lua_S
 }
 #endif //#ifndef TOLUA_DISABLE
 
+/* method: registerHandler of class  PlayerEditBoxServiceProtocol */
+#ifndef TOLUA_DISABLE_tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_registerHandler00
+static int tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_registerHandler00(lua_State* tolua_S)
+{
+#if COCOS2D_DEBUG >= 1
+ tolua_Error tolua_err;
+ if (
+     !tolua_isusertype(tolua_S,1,"PlayerEditBoxServiceProtocol",0,&tolua_err) ||
+     (tolua_isvaluenil(tolua_S,2,&tolua_err) || !toluafix_isfunction(tolua_S,2,"LUA_FUNCTION",0,&tolua_err)) ||
+     !tolua_isnoobj(tolua_S,3,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  PlayerEditBoxServiceProtocol* self = (PlayerEditBoxServiceProtocol*)  tolua_tousertype(tolua_S,1,0);
+  LUA_FUNCTION handler = (  toluafix_ref_function(tolua_S,2,0));
+#if COCOS2D_DEBUG >= 1
+  if (!self) tolua_error(tolua_S,"invalid 'self' in function 'registerHandler'", NULL);
+#endif
+  {
+   self->registerHandler(handler);
+  }
+ }
+ return 0;
+#if COCOS2D_DEBUG >= 1
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'registerHandler'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
 /* Open function */
 TOLUA_API int tolua_PlayerLuaCore_open (lua_State* tolua_S)
 {
@@ -3994,6 +4062,7 @@ TOLUA_API int tolua_PlayerLuaCore_open (lua_State* tolua_S)
    tolua_function(tolua_S,"openNewPlayer",tolua_PlayerLuaCore_PlayerProtocol_openNewPlayer00);
    tolua_function(tolua_S,"openNewPlayerWithProjectConfig",tolua_PlayerLuaCore_PlayerProtocol_openNewPlayerWithProjectConfig00);
    tolua_function(tolua_S,"openProjectWithProjectConfig",tolua_PlayerLuaCore_PlayerProtocol_openProjectWithProjectConfig00);
+   tolua_function(tolua_S,"trackEvent",tolua_PlayerLuaCore_PlayerProtocol_trackEvent00);
   tolua_endmodule(tolua_S);
   tolua_cclass(tolua_S,"PlayerFileDialogServiceProtocol","PlayerFileDialogServiceProtocol","PlayerServiceProtocol",NULL);
   tolua_beginmodule(tolua_S,"PlayerFileDialogServiceProtocol");
@@ -4058,6 +4127,7 @@ TOLUA_API int tolua_PlayerLuaCore_open (lua_State* tolua_S)
    tolua_function(tolua_S,"setText",tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_setText00);
    tolua_function(tolua_S,"setFont",tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_setFont00);
    tolua_function(tolua_S,"setFontColor",tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_setFontColor00);
+   tolua_function(tolua_S,"registerHandler",tolua_PlayerLuaCore_PlayerEditBoxServiceProtocol_registerHandler00);
   tolua_endmodule(tolua_S);
  tolua_endmodule(tolua_S);
  return 1;

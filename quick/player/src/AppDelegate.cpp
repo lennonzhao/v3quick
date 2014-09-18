@@ -7,6 +7,8 @@
 #include "codeIDE/runtime/Runtime.h"
 #include "codeIDE/ConfigParser.h"
 
+#include "PlayerProtocol.h"
+
 using namespace CocosDenshion;
 
 AppDelegate::AppDelegate()
@@ -158,5 +160,5 @@ void StartupCall::startup()
     engine->executeScriptFile(path.c_str());
     
     // track start event
-    engine->executeString("cc.player:trackStartEvent()");
+    player::PlayerProtocol::getInstance()->trackEvent("launch");
 }

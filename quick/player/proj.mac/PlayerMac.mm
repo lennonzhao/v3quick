@@ -2,8 +2,15 @@
 
 #include "PlayerMac.h"
 
+// for network
+#include "cocos2dx_extra.h"
+#include "network/CCHTTPRequest.h"
+#include "native/CCNative.h"
 
 PLAYER_NS_BEGIN
+
+using namespace cocos2d;
+USING_NS_CC_EXTRA;
 
 PlayerMac* PlayerMac::create()
 {
@@ -112,6 +119,25 @@ void PlayerMac::openProjectWithProjectConfig(const ProjectConfig& config)
 {
     this->openNewPlayerWithProjectConfig(config);
     this->quit();
+}
+
+void PlayerMac::trackEvent(const char* eventName)
+{
+    HTTPRequest *request = HTTPRequest::createWithUrl(NULL,
+                                                          "http://www.google-analytics.com/collect",
+                                                          kCCHTTPRequestMethodPOST);
+    request->addPOSTValue("v", "1");
+    request->addPOSTValue("tid", "UA-52790340-1");
+    request->addPOSTValue("cid", Native::getOpenUDID().c_str());
+    request->addPOSTValue("t", "event");
+    
+    request->addPOSTValue("an", "player");
+    request->addPOSTValue("av", cocos2dVersion());
+    
+	request->addPOSTValue("ec", "mac");
+    request->addPOSTValue("ea", eventName);
+    
+    request->start();
 }
 
 void PlayerMac::setController(id controller)

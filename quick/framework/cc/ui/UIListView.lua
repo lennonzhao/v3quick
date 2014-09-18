@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 --[[--
 
-quick UIListView控件
+quick 列表控件
 
 ]]
 
@@ -62,12 +62,15 @@ UIListView构建函数
 -   direction 列表控件的滚动方向，默认为垂直方向
 -   alignment listViewItem中content的对齐方式，默认为垂直居中
 -   viewRect 列表控件的显示区域
--   fadeDown 从底部开始淡出场景
--   fadeTR 从右上角开始淡出场景
--   fadeUp 从顶部开始淡出场景
--   flipAngular 当前场景倾斜后翻转成下一个场景，默认从左边开始翻转，可以指定为：
-    -   cc.TRANSITION_ORIENTATION_LEFT_OVER 从左边开始
-    -   cc.TRANSITION_ORIENTATION_RIGHT_OVER 从右边开始
+-   scrollbarImgH 水平方向的滚动条
+-   scrollbarImgV 垂直方向的滚动条
+-   bgColor 背景色,nil表示无背景色
+-   bgStartColor 渐变背景开始色,nil表示无背景色
+-   bgEndColor 渐变背景结束色,nil表示无背景色
+-   bg 背景图
+-   bgScale9 背景图是否可缩放
+-	capInsets 缩放区域
+
 
 @param table params 参数表
 
@@ -178,7 +181,7 @@ function UIListView:scrollListener(event)
 		local pos
 		if UIScrollView.DIRECTION_VERTICAL == self.direction then
 			for i,v in ipairs(self.items_) do
-				_, itemH = v:getItemSize()
+				itemW, itemH = v:getItemSize()
 
 				if nodePoint.y < height and nodePoint.y > height - itemH then
 					pos = i
@@ -189,7 +192,7 @@ function UIListView:scrollListener(event)
 			end
 		else
 			for i,v in ipairs(self.items_) do
-				itemW, _ = v:getItemSize()
+				itemW, itemH = v:getItemSize()
 
 				if nodePoint.x > width and nodePoint.x < width + itemW then
 					pos = i

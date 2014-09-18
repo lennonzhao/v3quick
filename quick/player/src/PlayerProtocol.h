@@ -39,7 +39,8 @@ public:
     virtual void openNewPlayer() = 0;
     virtual void openNewPlayerWithProjectConfig(const ProjectConfig &config) = 0;
     virtual void openProjectWithProjectConfig(const ProjectConfig &config) = 0;
-
+    virtual void trackEvent(const char* eventName) = 0;
+    
 protected:
     PlayerProtocol(); // avoid create instance from outside
 

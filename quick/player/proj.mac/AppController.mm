@@ -202,13 +202,45 @@ std::string getCurAppPath(void)
     //
     // load player.lua file
     //
-    NSString *luaCorePath = [[NSBundle mainBundle] pathForResource:@"player" ofType:@"lua"];
-    pEngine->getLuaStack()->executeScriptFile(luaCorePath.UTF8String);
+    string playerCoreFilePath = SimulatorConfig::getInstance()->getQuickCocos2dxRootPath() + "quick/welcome/src/player.lua";
+    pEngine->getLuaStack()->executeScriptFile(playerCoreFilePath.c_str());
     
     
     // load setting
 //    const player::PlayerSettings &settings = player::PlayerProtocol::getInstance()->getPlayerSettings();
 //    _project.setWindowOffset(Vec2(settings.offsetX, settings.offsetY));
+}
+
+- (void) createEditMenu
+{
+    NSApplication *thisApp = [NSApplication sharedApplication];
+    NSMenu *mainMenu = [thisApp mainMenu];
+
+    NSMenu *menu = [[[NSMenu alloc] initWithTitle:@"Edit"] autorelease];
+    NSMenuItem *soMenuItem = [[NSMenuItem alloc] initWithTitle:@""
+                                                        action:nil
+                                                 keyEquivalent:@""];
+
+    NSUInteger index = 2;
+    if (index > [mainMenu itemArray].count)
+        index = [mainMenu itemArray].count;
+    [mainMenu insertItem:soMenuItem atIndex:index];
+    [mainMenu setSubmenu:menu forItem:soMenuItem];
+
+
+    [menu addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];
+    [menu addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+
+    /**
+    // Find
+    [menu addItem:[NSMenuItem separatorItem]];
+    NSMenu *findMenu = [[[NSMenu alloc] initWithTitle:@"Find"] autorelease];
+    [menu setSubmenu:findMenu forItem:[menu addItemWithTitle:@"Find" action:nil keyEquivalent:@""]];
+    [findMenu addItemWithTitle:@"Find" action:@selector(performFindPanelAction:) keyEquivalent:@"f"];
+    [findMenu addItemWithTitle:@"Find Next" action:@selector(performFindPanelAction:) keyEquivalent:@"g"];
+    [[findMenu addItemWithTitle:@"Find Previous" action:@selector(performFindPanelAction:) keyEquivalent:@"g"]
+                                    setKeyEquivalentModifierMask:NSCommandKeyMask | NSShiftKeyMask];
+     **/
 }
 
 #pragma mark -
@@ -221,15 +253,15 @@ std::string getCurAppPath(void)
     // create opengl view
     cocos2d::Size frameSize = _project.getFrameSize();
     float frameScale = 1.0f;
-    if (_project.isRetinaDisplay())
-    {
-        frameSize.width *= screenScale;
-        frameSize.height *= screenScale;
-    }
-    else
-    {
-        frameScale = screenScale;
-    }
+//    if (_project.isRetinaDisplay())
+//    {
+//        frameSize.width *= screenScale;
+//        frameSize.height *= screenScale;
+//    }
+//    else
+//    {
+//        frameScale = screenScale;
+//    }
 
     const cocos2d::Rect frameRect = cocos2d::Rect(0, 0, frameSize.width, frameSize.height);
     GLView *eglView = GLView::createWithRect("player", frameRect, frameScale, _project.isResizeWindow());
@@ -331,6 +363,7 @@ std::string getCurAppPath(void)
     }
 
     [self loadLuaConfig];
+    [self createEditMenu];
     if (!_project.isAppMenu())
     {
         NSMenu *mainMenu = [[NSApplication sharedApplication] mainMenu];
